@@ -1,0 +1,16 @@
+name: Workflow / Feature Request
+description: Request a new workflow template or capability
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: What are you trying to build?
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Where Titan should help
+    validations:
+      required: false

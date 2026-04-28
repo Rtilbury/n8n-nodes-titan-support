@@ -67,6 +67,8 @@ export class TitanSupport implements INodeType {
 						body: {
 							error: input,
 							context: {
+								source: 'n8n-community-node',
+								node_version: '0.1.3',
 								expected_schema: expectedSchema,
 							},
 						},

@@ -1,0 +1,24 @@
+name: Titan Misclassification / Bug
+description: Report incorrect classification or unexpected behaviour
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Describe the issue
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Input provided
+      description: Paste the error or payload (remove sensitive data)
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: false

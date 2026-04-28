@@ -83,3 +83,11 @@ These examples represent common categories of AI output issues. Titan can also h
 - Initial release
 - Deterministic triage support
 - Structured audit output (`titan_audit`)
+
+## Feedback & Issues
+
+If Titan misclassifies an error, fails to detect a pattern, or you have a workflow suggestion, please open an issue:
+
+https://github.com/Rtilbury/n8n-nodes-titan-support/issues
+
+This helps improve deterministic detection and real-world workflow coverage.
