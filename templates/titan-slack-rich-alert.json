@@ -1,0 +1,85 @@
+{
+	"name": "Titan Slack Alert (Rich)",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "Manual Trigger",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
+			"typeVersion": 1,
+			"position": [200, 300]
+		},
+		{
+			"parameters": {
+				"values": {
+					"string": [
+						{
+							"name": "input",
+							"value": "Provider blocked this output due to policy risk. Manual review required."
+						}
+					]
+				}
+			},
+			"id": "Set Input",
+			"name": "Set Input",
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 2,
+			"position": [420, 300]
+		},
+		{
+			"parameters": {
+				"input": "={{$json.input}}"
+			},
+			"id": "Titan",
+			"name": "Titan Support",
+			"type": "n8n-nodes-titan-support.titanSupport",
+			"typeVersion": 1,
+			"position": [660, 300]
+		},
+		{
+			"parameters": {
+				"jsCode": "const src = $json;\n\nfunction pick(...vals){for(const v of vals){if(v!==undefined&&v!==null&&v!=='')return v;}return ''}\n\nconst title = pick(src?.status?.title, src?.response?.title, 'Titan Alert');\nconst severity = pick(src?.status?.severity, src?.response?.severity, 'unknown');\nconst category = pick(src?.status?.category, src?.response?.category, 'unknown');\n\nconst message = pick(src?.response?.message);\nconst explanation = pick(src?.response?.explanation);\nconst suggestedFix = pick(src?.response?.suggested_fix);\n\nconst provider = pick(src?.telemetry?.signature?.provider, 'unknown');\nconst errorType = pick(src?.telemetry?.signature?.error_type, 'unknown');\n\nconst manualReview = src?.decision?.manual_review_required === true;\n\nlet color = '#2E7D32';\nlet header = '🟢 TITAN OK';\n\nif (severity === 'error') {\n  color = '#D32F2F';\n  header = '🔴 TITAN ERROR';\n} else if (severity === 'warning') {\n  color = '#F9A825';\n  header = '🟠 TITAN WARNING';\n}\n\nif (manualReview) {\n  color = '#D32F2F';\n  header = '🚨 MANUAL REVIEW REQUIRED';\n}\n\nconst blocks = [];\n\nblocks.push({\n  type: 'header',\n  text: { type: 'plain_text', text: header }\n});\n\nblocks.push({\n  type: 'section',\n  text: {\n    type: 'mrkdwn',\n    text: `*${title}*\\n*Severity:* \\`${severity}\\`    *Category:* \\`${category}\\``\n  }\n});\n\nif (message) {\n  blocks.push({\n    type: 'section',\n    text: { type: 'mrkdwn', text: `*Message*\\n${message}` }\n  });\n}\n\nif (explanation) {\n  blocks.push({\n    type: 'section',\n    text: { type: 'mrkdwn', text: `*Explanation*\\n${explanation}` }\n  });\n}\n\nif (suggestedFix) {\n  blocks.push({\n    type: 'section',\n    text: { type: 'mrkdwn', text: `*Suggested Fix*\\n${suggestedFix}` }\n  });\n}\n\nblocks.push({ type: 'divider' });\n\nblocks.push({\n  type: 'context',\n  elements: [\n    { type: 'mrkdwn', text: `*provider:* ${provider}` },\n    { type: 'mrkdwn', text: `*error type:* ${errorType}` }\n  ]\n});\n\nreturn [\n  {\n    json: {\n      slack_blocks: blocks,\n      slack_color: color,\n      slack_text: `${header} - ${title}`\n    }\n  }\n];"
+			},
+			"id": "Format Slack",
+			"name": "Format Slack",
+			"type": "n8n-nodes-base.code",
+			"typeVersion": 2,
+			"position": [900, 300]
+		}
+	],
+	"connections": {
+		"Manual Trigger": {
+			"main": [
+				[
+					{
+						"node": "Set Input",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set Input": {
+			"main": [
+				[
+					{
+						"node": "Titan",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Titan": {
+			"main": [
+				[
+					{
+						"node": "Format Slack",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
+}

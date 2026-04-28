@@ -70,6 +70,16 @@ Runtime Error (execution failure)
 
 These examples represent common categories of AI output issues. Titan can also handle mixed inputs, partial payloads, and more complex error conditions, returning a structured triage response.
 
+## Workflow Templates
+
+Starter templates are included in the `/templates` folder:
+
+- `titan-ai-validation.json` — validate AI output before it reaches the next workflow step
+- `titan-manual-review-alert.json` — prepare a manual-review alert when Titan flags unsafe or uncertain output
+- `titan-slack-rich-alert.json` — format a Slack-ready alert from Titan’s structured response
+
+These templates are intended as starting points. After import, add your Titan API credentials and adjust downstream actions such as Slack, email, or database logging.
+
 Compatibility
 Minimum n8n version: 1.0.0+
 Tested with: n8n v1.x
