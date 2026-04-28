@@ -82,7 +82,7 @@ Starter templates are included in the /templates folder:
 titan-ai-validation.json — schema validation and correction demo
 titan-error-triage.json — paste-any-error classification
 titan-manual-review-alert.json — manual review decision handling
-titan-slack-rich-alert.json — Slack-ready alert formatting
+
 
 These templates are intended as starting points. After import, add your Titan API credentials and adjust downstream actions such as Slack, email, or database logging.
 
