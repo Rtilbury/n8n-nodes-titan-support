@@ -1,16 +1,20 @@
 {
-	"name": "n8n-nodes-titan-support",
-	"version": "0.1.2",
-	"description": "Titan Support Node – deterministic AI error detection, correction, and recovery for n8n workflows",
-	"license": "MIT",
-	"homepage": "https://github.com/Rtilbury/n8n-nodes-titan-support",
-	"keywords": [
-		"n8n-community-node-package"
-	],
-	"author": {
-		"name": "Russell Tilbury",
-		"email": "support@titan-api.com"
-	},
+  "name": "n8n-nodes-titan-support",
+  "version": "0.1.2",
+  "description": "Titan Support Node – deterministic AI error detection, correction, and recovery for n8n workflows",
+  "license": "MIT",
+  "homepage": "https://github.com/Rtilbury/n8n-nodes-titan-support",
+  "keywords": [
+    "n8n-community-node-package"
+  ],
+  "author": {
+    "name": "Russell Tilbury",
+    "email": "support@titan-api.com"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Rtilbury/n8n-nodes-titan-support.git"
