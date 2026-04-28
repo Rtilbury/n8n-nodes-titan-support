@@ -1,11 +1,11 @@
 {
-	"name": "Titan AI Output Validation",
+	"name": "Titan Error Triage",
 	"nodes": [
 		{
 			"parameters": {},
-			"id": "Start",
-			"name": "Start",
-			"type": "n8n-nodes-base.start",
+			"id": "Manual Trigger",
+			"name": "Manual Trigger",
+			"type": "n8n-nodes-base.manualTrigger",
 			"typeVersion": 1,
 			"position": [200, 300]
 		},
@@ -15,48 +15,42 @@
 					"string": [
 						{
 							"name": "error",
-							"value": ""
-						}
-					],
-					"json": [
-						{
-							"name": "context",
-							"value": "{\"payload\":{\"name\":123},\"expected_schema\":{\"name\":\"string\"}}"
+							"value": "TypeError: Cannot read properties of undefined (reading 'name')"
 						}
 					]
 				}
 			},
-			"id": "Set Input",
-			"name": "Set Input",
+			"id": "Set Error",
+			"name": "Set Error",
 			"type": "n8n-nodes-base.set",
 			"typeVersion": 2,
-			"position": [400, 300]
+			"position": [420, 300]
 		},
 		{
 			"parameters": {
 				"input": "={{$json.error}}",
-				"expectedSchema": "={{JSON.parse($json.context).expected_schema}}"
+				"expectedSchema": "{}"
 			},
 			"id": "Titan",
 			"name": "Titan Support",
 			"type": "n8n-nodes-titan-support.titanSupport",
 			"typeVersion": 1,
-			"position": [600, 300]
+			"position": [660, 300]
 		}
 	],
 	"connections": {
-		"Start": {
+		"Manual Trigger": {
 			"main": [
 				[
 					{
-						"node": "Set Input",
+						"node": "Set Error",
 						"type": "main",
 						"index": 0
 					}
 				]
 			]
 		},
-		"Set Input": {
+		"Set Error": {
 			"main": [
 				[
 					{
