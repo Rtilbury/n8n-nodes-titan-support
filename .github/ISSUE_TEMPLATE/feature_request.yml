@@ -6,11 +6,27 @@ body:
   - type: textarea
     attributes:
       label: What are you trying to build?
+      description: Describe the workflow or use case.
     validations:
       required: true
 
   - type: textarea
     attributes:
       label: Where Titan should help
+      description: What part of the workflow should Titan handle?
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Example input or problem
+      description: Provide a sample error, payload, or scenario (remove sensitive data).
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
+      label: Desired outcome
+      description: What should Titan ideally return or enable?
     validations:
       required: false

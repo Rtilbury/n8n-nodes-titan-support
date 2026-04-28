@@ -6,19 +6,27 @@ body:
   - type: textarea
     attributes:
       label: What happened?
-      description: Describe the issue
+      description: Describe the issue.
     validations:
       required: true
 
   - type: textarea
     attributes:
       label: Input provided
-      description: Paste the error or payload (remove sensitive data)
+      description: Paste the error or payload. Remove sensitive data first.
     validations:
       required: true
 
   - type: textarea
     attributes:
+      label: Titan output
+      description: Paste the Titan response if available. Remove sensitive data first.
+    validations:
+      required: false
+
+  - type: textarea
+    attributes:
       label: Expected behaviour
+      description: What did you expect Titan to return?
     validations:
       required: false

@@ -1,0 +1,68 @@
+{
+	"name": "Titan AI Output Validation",
+	"nodes": [
+		{
+			"parameters": {},
+			"id": "Start",
+			"name": "Start",
+			"type": "n8n-nodes-base.start",
+			"typeVersion": 1,
+			"position": [200, 300]
+		},
+		{
+			"parameters": {
+				"values": {
+					"string": [
+						{
+							"name": "input",
+							"value": "{\"name\": \"John\", \"age\": \"not-a-number\"}"
+						}
+					]
+				}
+			},
+			"id": "Set Input",
+			"name": "Set Input",
+			"type": "n8n-nodes-base.set",
+			"typeVersion": 2,
+			"position": [400, 300]
+		},
+		{
+			"parameters": {
+				"input": "={{$json.input}}",
+				"expectedSchema": {
+					"name": "string",
+					"age": "number"
+				}
+			},
+			"id": "Titan",
+			"name": "Titan Support",
+			"type": "n8n-nodes-titan-support.titanSupport",
+			"typeVersion": 1,
+			"position": [600, 300]
+		}
+	],
+	"connections": {
+		"Start": {
+			"main": [
+				[
+					{
+						"node": "Set Input",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		},
+		"Set Input": {
+			"main": [
+				[
+					{
+						"node": "Titan",
+						"type": "main",
+						"index": 0
+					}
+				]
+			]
+		}
+	}
+}
