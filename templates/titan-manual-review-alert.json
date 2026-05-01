@@ -1,93 +1,93 @@
 {
-	"name": "Titan Manual Review Alert",
-	"nodes": [
-		{
-			"parameters": {},
-			"id": "Manual Trigger",
-			"name": "Manual Trigger",
-			"type": "n8n-nodes-base.manualTrigger",
-			"typeVersion": 1,
-			"position": [200, 300]
-		},
-		{
-			"parameters": {
-				"values": {
-					"string": [
-						{
-							"name": "input",
-							"value": "Provider blocked this output because it may violate policy. Manual review required before continuing."
-						}
-					],
-					"json": [
-						{
-							"name": "expectedSchema",
-							"value": "{\"message\":\"string\",\"action\":\"string\"}"
-						}
-					]
-				},
-				"options": {}
-			},
-			"id": "Example Input",
-			"name": "Example Input",
-			"type": "n8n-nodes-base.set",
-			"typeVersion": 2,
-			"position": [420, 300]
-		},
-		{
-			"parameters": {
-				"input": "={{$json.input}}",
-				"expectedSchema": "={{$json.expectedSchema}}"
-			},
-			"id": "Titan Support",
-			"name": "Titan Support",
-			"type": "n8n-nodes-titan-support.titanSupport",
-			"typeVersion": 1,
-			"position": [660, 300]
-		},
-		{
-			"parameters": {
-				"jsCode": "const src = $json;\n\nconst manualReview = src?.decision?.manual_review_required === true || src?.titan_audit?.manual_review_required === true;\nconst title = src?.status?.title || src?.response?.title || 'Titan Support Review';\nconst category = src?.status?.category || src?.response?.category || 'unknown';\nconst severity = src?.status?.severity || src?.response?.severity || 'unknown';\nconst route = src?.decision?.route || 'unknown';\nconst action = src?.decision?.action || src?.titan_audit?.next_step_recommendation || 'review_required';\nconst confidence = src?.titan_audit?.confidence_score ?? src?.resolver?.confidence ?? 'unknown';\nconst safeToExecute = src?.titan_audit?.safe_to_execute ?? src?.execution?.allowed ?? false;\n\nreturn [\n  {\n    json: {\n      should_alert: manualReview,\n      alert_title: manualReview ? 'Manual review required' : 'No manual review required',\n      titan_title: title,\n      category,\n      severity,\n      route,\n      action,\n      confidence,\n      safe_to_execute: safeToExecute,\n      message: manualReview\n        ? `Titan flagged this workflow step for manual review. Category: ${category}. Action: ${action}.`\n        : `Titan did not require manual review. Category: ${category}. Action: ${action}.`,\n      titan_response: src\n    }\n  }\n];"
-			},
-			"id": "Prepare Alert",
-			"name": "Prepare Alert",
-			"type": "n8n-nodes-base.code",
-			"typeVersion": 2,
-			"position": [900, 300]
-		}
-	],
-	"connections": {
-		"Manual Trigger": {
-			"main": [
-				[
-					{
-						"node": "Example Input",
-						"type": "main",
-						"index": 0
-					}
-				]
-			]
-		},
-		"Example Input": {
-			"main": [
-				[
-					{
-						"node": "Titan Support",
-						"type": "main",
-						"index": 0
-					}
-				]
-			]
-		},
-		"Titan Support": {
-			"main": [
-				[
-					{
-						"node": "Prepare Alert",
-						"type": "main",
-						"index": 0
-					}
-				]
-			]
-		}
-	}
+  "name": "Titan Manual Review Alert",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "Manual Trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "input",
+              "value": "Provider blocked this output because it may violate policy. Manual review required before continuing."
+            }
+          ],
+          "json": [
+            {
+              "name": "expectedSchema",
+              "value": "{\"message\":\"string\",\"action\":\"string\"}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "Example Input",
+      "name": "Example Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "input": "={{$json.input}}",
+        "expectedSchema": "={{$json.expectedSchema}}"
+      },
+      "id": "Titan Support",
+      "name": "Titan Support",
+      "type": "n8n-nodes-titan-support.titanSupport",
+      "typeVersion": 1,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const src = $json;\n\nconst manualReview = src?.decision?.manual_review_required === true || src?.titan_audit?.manual_review_required === true;\nconst title = src?.status?.title || src?.response?.title || 'Titan Support Review';\nconst category = src?.status?.category || src?.response?.category || 'unknown';\nconst severity = src?.status?.severity || src?.response?.severity || 'unknown';\nconst route = src?.decision?.route || 'unknown';\nconst action = src?.decision?.action || src?.titan_audit?.next_step_recommendation || 'review_required';\nconst detectionSource = src?.telemetry?.detection_source || '';\nconst rawConfidence = src?.titan_audit?.confidence_score ?? src?.resolver?.confidence ?? 'unknown';\nconst confidence = String(detectionSource).includes('cascade_override')\n  ? 'High (Deterministic)'\n  : rawConfidence;\nconst safeToExecute = src?.titan_audit?.safe_to_execute ?? src?.execution?.allowed ?? false;\n\nreturn [\n  {\n    json: {\n      should_alert: manualReview,\n      alert_title: manualReview ? 'Manual review required' : 'No manual review required',\n      titan_title: title,\n      category,\n      severity,\n      route,\n      action,\n      confidence,\n      safe_to_execute: safeToExecute,\n      message: manualReview\n        ? `Manual review required before this workflow step can continue. Category: ${category}. Action: ${action}.`\n        : `Titan did not require manual review. Category: ${category}. Action: ${action}.`,\n      titan_response: src\n    }\n  }\n];"
+      },
+      "id": "Prepare Alert",
+      "name": "Prepare Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Example Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Example Input": {
+      "main": [
+        [
+          {
+            "node": "Titan Support",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Titan Support": {
+      "main": [
+        [
+          {
+            "node": "Prepare Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
 }

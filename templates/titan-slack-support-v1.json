@@ -1,0 +1,146 @@
+{
+  "name": "Titan Slack Support v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e41ee7c0-41d1-4243-8f67-10bce9f68a35",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://b2hmcbgju7.eu-west-1.awsapprunner.com/v1/support/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"error\": \"Something failed in my workflow.\\nHere is the payload:\\n{ \\\"customer_id\\\": 123, issue: \\\"login\\\" }\\nThen later I got:\\nTypeError: Cannot read properties of undefined (reading 'name')\",\n  \"context\": {\n    \"source\": \"n8n-template\",\n    \"test_case\": \"json_parse_cascade\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c67ba925-1661-4b0d-adab-5614b730577a",
+      "name": "Titan Support API"
+    },
+    {
+      "parameters": {
+        "jsCode": "const src = $json;\n\nfunction get(obj, path, fallback = '') {\n\ttry {\n\t\tconst value = path.split('.').reduce((o, key) => (o || {})[key], obj);\n\t\treturn value ?? fallback;\n\t} catch {\n\t\treturn fallback;\n\t}\n}\n\nfunction pick(...values) {\n\tfor (const value of values) {\n\t\tif (value !== undefined && value !== null && value !== '') return value;\n\t}\n\treturn '';\n}\n\nfunction toText(value) {\n\tif (value === null || value === undefined || value === '') return '';\n\tif (typeof value === 'string') return value;\n\ttry {\n\t\treturn JSON.stringify(value, null, 2);\n\t} catch {\n\t\treturn String(value);\n\t}\n}\n\nfunction truncate(value, max = 1200) {\n\tconst output = toText(value);\n\tif (output.length <= max) return output;\n\treturn `${output.slice(0, max)}\\n…truncated`;\n}\n\nfunction isNonEmptyArray(value) {\n\treturn Array.isArray(value) && value.length > 0;\n}\n\nfunction codeBlock(label, value, max = 900) {\n\tif (!value || toText(value) === '[]' || toText(value) === '{}') return null;\n\treturn {\n\t\ttype: 'section',\n\t\ttext: {\n\t\t\ttype: 'mrkdwn',\n\t\t\ttext: `*${label}*\\n\\`\\`\\`${truncate(value, max)}\\`\\`\\``,\n\t\t},\n\t};\n}\n\nfunction addBlock(blocks, block) {\n\tif (block) blocks.push(block);\n}\n\nfunction extractResponseSections(responseText) {\n\tconst text = toText(responseText);\n\n\tconst sections = {\n\t\tmessage: '',\n\t\tmeaning: '',\n\t\tlikelyCause: '',\n\t\tnextStep: '',\n\t};\n\n\tconst meaningMatch = text.match(/Meaning:\\n([\\s\\S]*?)(\\n\\nLikely cause:|\\n\\nNext step:|\\n\\nInput type:|$)/i);\n\tconst likelyMatch = text.match(/Likely cause:\\s*([\\s\\S]*?)(\\n\\nTitan has|\\n\\nNext step:|\\n\\nInput type:|$)/i);\n\tconst nextMatch = text.match(/Next step:\\n([\\s\\S]*?)(\\n\\nInput type:|$)/i);\n\n\tsections.meaning = meaningMatch ? meaningMatch[1].trim() : '';\n\tsections.likelyCause = likelyMatch ? likelyMatch[1].trim() : '';\n\tsections.nextStep = nextMatch ? nextMatch[1].trim() : '';\n\n\tconst firstLines = text.split('\\n').filter(Boolean);\n\tsections.message = firstLines.slice(0, 2).join(' — ');\n\n\treturn sections;\n}\n\nconst title = pick(get(src, 'status.title'), 'Titan Signal');\nconst category = pick(get(src, 'status.category'), 'unknown');\nconst severity = pick(get(src, 'status.severity'), 'info');\n\nconst responseText = typeof src.response === 'string' ? src.response : '';\nconst sections = extractResponseSections(responseText);\n\nconst route = pick(get(src, 'decision.route'), get(src, 'titan_audit.decision.route'), 'unknown');\nconst action = pick(get(src, 'decision.action'), get(src, 'titan_audit.next_step_recommendation'), 'review_required');\n\nconst manualReview = get(src, 'decision.manual_review_required') === true || get(src, 'titan_audit.manual_review_required') === true;\nconst safeToExecute = get(src, 'titan_audit.safe_to_execute');\nconst safeToAutofix = get(src, 'resolver.safe_to_autofix');\n\nconst provider = pick(get(src, 'telemetry.signature.provider'), 'unknown');\nconst errorType = pick(get(src, 'telemetry.signature.error_type'), 'unknown');\nconst line = pick(get(src, 'telemetry.signature.line'), '-');\nconst column = pick(get(src, 'telemetry.signature.column'), '-');\nconst snippet = pick(get(src, 'telemetry.signature.snippet'), get(src, 'telemetry.user_text'));\n\nconst inputType = pick(get(src, 'telemetry.input_type'), 'unknown');\nconst detectionSource = pick(get(src, 'telemetry.detection_source'), 'unknown');\nconst signature = pick(get(src, 'telemetry.error_signature'), 'unknown');\nconst confidenceRaw = pick(\n\tget(src, 'titan_audit.confidence_score'),\n\tget(src, 'execution.confidence'),\n\tget(src, 'resolver.confidence'),\n\t'unknown'\n);\n\nconst confidence = String(detectionSource || '').includes('cascade_override')\n\t? 'High (Deterministic)'\n\t: confidenceRaw;\n\nconst transformations = get(src, 'titan_audit.transformations', []);\nconst correctedFields = get(src, 'resolver.corrected_fields', []);\nconst missingFields = get(src, 'resolver.missing_fields', []);\nconst extraFields = get(src, 'resolver.extra_fields', []);\nconst uncorrectableFields = get(src, 'resolver.uncorrectable_fields', []);\nconst resolverCandidate = get(src, 'resolver.candidate');\n\nconst detectionIndicatesCascade = String(detectionSource || '').includes('cascade_override');\nconst detailsCascadeDetected = get(src, 'response.details.cascade_detected') === true;\n\nconst cascadeDetected = Boolean(\n\tdetailsCascadeDetected ||\n\tdetectionIndicatesCascade\n);\n\nconst primaryIssue = cascadeDetected\n\t? pick(get(src, 'response.details.primary_failure'), category)\n\t: null;\n\nconst secondarySignal = cascadeDetected\n\t? pick(\n\t\tget(src, 'response.details.secondary_failure'),\n\t\tString(snippet || '').includes('TypeError') ? 'runtime_error' : 'none'\n\t)\n\t: 'none';\n\nconst fixOrder = cascadeDetected\n\t? pick(\n\t\tget(src, 'response.details.fix_priority_order'),\n\t\t[\n\t\t\t'Fix this first: repair the malformed JSON fragment.',\n\t\t\t'Then retry the workflow with valid JSON.',\n\t\t\t'Only inspect the runtime error if it still appears after the JSON is fixed.'\n\t\t]\n\t)\n\t: [];\n\nlet color = '#2E7D32';\nlet header = '🟢 TITAN SIGNAL';\n\nif (severity === 'error') {\n\tcolor = '#D32F2F';\n\theader = '🔴 TITAN SIGNAL';\n} else if (severity === 'warning') {\n\tcolor = '#F9A825';\n\theader = '🟠 TITAN SIGNAL';\n}\n\nif (manualReview) {\n\tcolor = '#D32F2F';\n\theader = '🚨 TITAN MANUAL REVIEW';\n}\n\nconst decisionEmoji = manualReview ? '🚨' : safeToAutofix ? '🛠️' : severity === 'error' ? '🔴' : severity === 'warning' ? '🟠' : '🟢';\n\nlet actionText;\n\nif (category === 'json_parse_error') {\n\tactionText = 'Fix this first: repair the malformed JSON, then retry the workflow.';\n} else if (category === 'dependency_error') {\n\tactionText = 'Fix this first: install or resolve the missing dependency, then rebuild and retry.';\n} else if (category === 'missing_fields') {\n\tactionText = 'Fix this first: add the missing required fields, then retry the request.';\n} else if (category === 'schema_corrected') {\n\tactionText = 'Review the corrected fields and update your payload to match the expected schema.';\n} else if (category === 'schema_partially_corrected_blocked') {\n\tactionText = 'Fix the remaining blocking fields before retrying the request.';\n} else if (category === 'auth_error') {\n\tactionText = 'Fix this first: correct the API key or authentication configuration, then retry.';\n} else if (category === 'infrastructure_error') {\n\tactionText = 'Check provider status, network connectivity, DNS, timeout settings, and retry after a short delay.';\n} else if (category === 'runtime_error') {\n\tactionText = 'Inspect the failing step and fix undefined/null values before retrying.';\n} else {\n\tactionText = sections.nextStep\n\t\t? sections.nextStep\n\t\t: action !== 'unknown'\n\t\t\t? `Follow route: \\`${action}\\`.`\n\t\t\t: 'Review the Titan response before continuing.';\n}\n\nconst shareableSummary = cascadeDetected\n\t? `${decisionEmoji} Titan found the root cause: ${primaryIssue || category}. Fix this first before addressing ${secondarySignal || 'secondary errors'}.`\n\t: `${decisionEmoji} Titan detected ${title}. Action: ${action}. Safe to execute: ${safeToExecute}.`;\n\nconst blocks = [];\n\nblocks.push({\n\ttype: 'header',\n\ttext: {\n\t\ttype: 'plain_text',\n\t\ttext: header,\n\t},\n});\n\nblocks.push({\n\ttype: 'section',\n\ttext: {\n\t\ttype: 'mrkdwn',\n\t\ttext:\n\t\t\t`*${title}*\\n` +\n\t\t\t`*Severity:* \\`${severity}\\`    *Category:* \\`${category}\\`\\n` +\n\t\t\t`*Decision:* \\`${route}\\` → \\`${action}\\`\\n` +\n\t\t\t`*Confidence:* \\`${confidence}\\`    *Manual review:* \\`${manualReview}\\``,\n\t},\n});\n\nif (cascadeDetected) {\n\tconst fixOrderText = Array.isArray(fixOrder) && fixOrder.length\n\t\t? fixOrder.map((step, index) => `${index + 1}. ${step}`).join('\\n')\n\t\t: '1. Resolve the primary issue first.\\n2. Retry the workflow.\\n3. Review any remaining secondary signal.';\n\n\tblocks.push({\n\t\ttype: 'section',\n\t\ttext: {\n\t\t\ttype: 'mrkdwn',\n\t\t\ttext:\n\t\t\t\t`*⚠️ Cascade Detected*\\n` +\n\t\t\t\t`*Primary issue:* \\`${primaryIssue || category}\\`\\n` +\n\t\t\t\t`*Secondary signal:* \\`${secondarySignal || 'none'}\\`\\n\\n` +\n\t\t\t\t`*Fix this first before anything else*\\n${fixOrderText}`,\n\t\t},\n\t});\n}\n\nblocks.push({\n\ttype: 'section',\n\ttext: {\n\t\ttype: 'mrkdwn',\n\t\ttext: `*What to do next*\\n${truncate(actionText, 700)}`,\n\t},\n});\n\nif (sections.meaning) {\n\tblocks.push({\n\t\ttype: 'section',\n\t\ttext: {\n\t\t\ttype: 'mrkdwn',\n\t\t\ttext: `*Why Titan flagged this*\\n${truncate(sections.meaning, 900)}`,\n\t\t},\n\t});\n}\n\nif (sections.likelyCause) {\n\tblocks.push({\n\t\ttype: 'section',\n\t\ttext: {\n\t\t\ttype: 'mrkdwn',\n\t\t\ttext: `*Likely cause*\\n${truncate(sections.likelyCause, 900)}`,\n\t\t},\n\t});\n}\n\nif (isNonEmptyArray(transformations)) {\n\taddBlock(blocks, codeBlock('Titan Correction Receipt', transformations, 1000));\n}\n\nif (resolverCandidate) {\n\taddBlock(blocks, codeBlock('Corrected Payload Candidate', resolverCandidate, 1000));\n}\n\nif (isNonEmptyArray(correctedFields)) {\n\taddBlock(blocks, codeBlock('Corrected Fields', correctedFields, 700));\n}\n\nif (isNonEmptyArray(missingFields)) {\n\taddBlock(blocks, codeBlock('Missing Fields', missingFields, 700));\n}\n\nif (isNonEmptyArray(extraFields)) {\n\taddBlock(blocks, codeBlock('Extra Fields', extraFields, 700));\n}\n\nif (isNonEmptyArray(uncorrectableFields)) {\n\taddBlock(blocks, codeBlock('Uncorrectable Fields', uncorrectableFields, 700));\n}\n\nblocks.push({\n\ttype: 'section',\n\ttext: {\n\t\ttype: 'mrkdwn',\n\t\ttext:\n\t\t\t`*Execution Guard*\\n` +\n\t\t\t`*Safe to execute:* \\`${safeToExecute}\\`    *Safe autofix:* \\`${safeToAutofix}\\`\\n` +\n\t\t\t`*Input type:* \\`${inputType}\\`    *Detection:* \\`${detectionSource}\\``,\n\t},\n});\n\nblocks.push({ type: 'divider' });\n\nblocks.push({\n\ttype: 'context',\n\telements: [\n\t\t{ type: 'mrkdwn', text: `*provider:* ${provider}` },\n\t\t{ type: 'mrkdwn', text: `*error:* ${errorType}` },\n\t\t{ type: 'mrkdwn', text: `*signature:* ${signature}` },\n\t],\n});\n\nblocks.push({\n\ttype: 'context',\n\telements: [\n\t\t{ type: 'mrkdwn', text: `*line:* ${line}` },\n\t\t{ type: 'mrkdwn', text: `*column:* ${column}` },\n\t],\n});\n\nif (snippet) {\n\tblocks.push({\n\t\ttype: 'section',\n\t\ttext: {\n\t\t\ttype: 'mrkdwn',\n\t\t\ttext: `*Relevant Snippet*\\n\\`\\`\\`${truncate(snippet, 900)}\\`\\`\\``,\n\t\t},\n\t});\n}\n\nblocks.push({\n\ttype: 'section',\n\ttext: {\n\t\ttype: 'mrkdwn',\n\t\ttext: `*Shareable Summary*\\n${shareableSummary}`,\n\t},\n});\n\nreturn [\n\t{\n\t\tjson: {\n\t\t\tslack_text: `${header} - ${title}`,\n\t\t\tslack_color: color,\n\t\t\tslack_blocks: blocks,\n\t\t\tslack_attachments: [\n\t\t\t\t{\n\t\t\t\t\tcolor,\n\t\t\t\t\tfallback: shareableSummary,\n\t\t\t\t\tblocks,\n\t\t\t\t},\n\t\t\t],\n\t\t\tshareable_summary: shareableSummary,\n\t\t},\n\t},\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "id": "95d8aa81-5e19-4ffa-bb0b-fcfa8078858d",
+      "name": "Slack Formatter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_SLACK_BOT_TOKEN"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "channel",
+              "value": "YOUR_CHANNEL_ID"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.slack_text }}"
+            },
+            {
+              "name": "attachments",
+              "value": "={{ $json.slack_attachments }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        592,
+        0
+      ],
+      "id": "86f8b308-e18e-4d28-973a-27221646bf3c",
+      "name": "Post to Slack"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Titan Support API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Titan Support API": {
+      "main": [
+        [
+          {
+            "node": "Slack Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Formatter": {
+      "main": [
+        [
+          {
+            "node": "Post to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "06705ced-ab10-421d-ac7b-91c68c78bc2c",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
