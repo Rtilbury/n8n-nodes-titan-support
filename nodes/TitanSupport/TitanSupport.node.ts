@@ -4,8 +4,7 @@ import {
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
-	INodeTypeDescription,
-	NodeApiError,
+	INodeTypeDescription,	
 	NodeOperationError,
 } from 'n8n-workflow';
 
@@ -174,13 +173,13 @@ export class TitanSupport implements INodeType {
 							json: true,
 						},
 					);
-			} catch (error) {
-	            throw new NodeOperationError(
-		            this.getNode(),
-		           'Titan API request failed.',
-		           { itemIndex: i },
-	           );
-            }
+			} catch {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Titan API request failed.',
+					{ itemIndex: i },
+				);
+			}
 
 			if (
 				typeof response !== 'object' ||
