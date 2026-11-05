@@ -34,6 +34,9 @@ jobs:
       - name: Run build
         run: npm run build
 
+      - name: Run Canonical contract tests
+        run: node --test tests/canonical-validator.test.cjs
+
       - name: Verify Canonical schema is packaged
         run: |
           npm pack --dry-run --json > npm-pack-manifest.json
