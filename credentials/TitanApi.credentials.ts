@@ -1,6 +1,7 @@
 
 import {
 	IAuthenticateGeneric,
+	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
@@ -34,6 +35,15 @@ export class TitanApi implements ICredentialType {
 			headers: {
 				'X-API-Key': '={{$credentials.apiKey}}',
 			},
+		},
+	};
+
+	test: ICredentialTestRequest = {
+		request: {
+			baseURL:
+				'https://b2hmcbgju7.eu-west-1.awsapprunner.com',
+			url: '/v1/auth/check',
+			method: 'GET',
 		},
 	};
 }
