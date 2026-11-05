@@ -1,4 +1,6 @@
+
 import {
+	IAuthenticateGeneric,
 	ICredentialType,
 	INodeProperties,
 } from 'n8n-workflow';
@@ -7,15 +9,9 @@ export class TitanApi implements ICredentialType {
 	name = 'titanApi';
 	displayName = 'Titan API';
 	icon = 'file:titan.svg' as const;
-	documentationUrl = 'https://github.com/Rtilbury/n8n-nodes-titan-support';
 
-	test = {
-		request: {
-			baseURL: 'https://b2hmcbgju7.eu-west-1.awsapprunner.com',
-			url: '/health',
-			method: 'GET' as const,
-		},
-	};
+	documentationUrl =
+		'https://github.com/Rtilbury/n8n-nodes-titan-support';
 
 	properties: INodeProperties[] = [
 		{
@@ -27,6 +23,17 @@ export class TitanApi implements ICredentialType {
 			},
 			default: '',
 			required: true,
+			description:
+				'Titan API key used to authenticate requests to the governed analysis API',
 		},
 	];
+
+	authenticate: IAuthenticateGeneric = {
+		type: 'generic',
+		properties: {
+			headers: {
+				'X-API-Key': '={{$credentials.apiKey}}',
+			},
+		},
+	};
 }
