@@ -1,5 +1,4 @@
-
-name: CI
+﻿name: CI
 
 on:
   pull_request:
@@ -32,6 +31,11 @@ jobs:
 
       - name: Run build
         run: npm run build
+
+      - name: Probe standalone Canonical validator
+        run: |
+          node scripts/probe-standalone.cjs
+          node -e "require('node:fs').unlinkSync('dist/canonical-standalone-probe.cjs')"
 
       - name: Run Canonical contract tests
         run: node --test tests/canonical-validator.test.cjs
