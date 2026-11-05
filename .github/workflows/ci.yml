@@ -33,9 +33,16 @@ jobs:
         run: npm run build
 
       - name: Probe standalone Canonical validator
+        run: node scripts/probe-standalone.cjs
+
+      - name: Probe bundled standalone validator
         run: |
-          node scripts/probe-standalone.cjs
-          node -e "require('node:fs').unlinkSync('dist/canonical-standalone-probe.cjs')"
+          npx --yes esbuild@0.25.12 dist/canonical-standalone-probe.cjs --bundle --platform=node --format=cjs --outfile=dist/canonical-standalone-bundled-probe.cjs
+          node scripts/verify-bundled-standalone.cjs
+
+      - name: Remove experimental build artifacts
+        run: |
+          node -e "const fs = require('node:fs'); fs.unlinkSync('dist/canonical-standalone-probe.cjs'); fs.unlinkSync('dist/canonical-standalone-bundled-probe.cjs')"
 
       - name: Run Canonical contract tests
         run: node --test tests/canonical-validator.test.cjs
