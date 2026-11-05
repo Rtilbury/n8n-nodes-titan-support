@@ -175,12 +175,12 @@ export class TitanSupport implements INodeType {
 						},
 					);
 			} catch (error) {
-				throw new NodeApiError(
-					this.getNode(),
-					error as IDataObject,
-					{ itemIndex: i },
-				);
-			}
+	            throw new NodeOperationError(
+		            this.getNode(),
+		           'Titan API request failed.',
+		           { itemIndex: i },
+	           );
+            }
 
 			if (
 				typeof response !== 'object' ||
