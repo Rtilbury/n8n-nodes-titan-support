@@ -19,7 +19,7 @@
 		"url": "https://github.com/Rtilbury/n8n-nodes-titan-support.git"
 	},
 	"scripts": {
-		"build": "n8n-node build",
+		"build": "n8n-node build && node scripts/copy-canonical-schema.cjs",
 		"build:watch": "tsc --watch",
 		"dev": "n8n-node dev",
 		"lint": "n8n-node lint",
@@ -42,6 +42,8 @@
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "^0.23.1",
+		"ajv": "8.17.1",
+		"ajv-formats": "3.0.1",
 		"eslint": "9.39.4",
 		"prettier": "3.8.1",
 		"release-it": "19.2.4",

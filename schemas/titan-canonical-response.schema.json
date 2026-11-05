@@ -1,0 +1,775 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schema.titan.local/v1/canonical-response.schema.json",
+  "title": "Titan Canonical Response",
+  "description": "Defines the deterministic operational intelligence, recovery guidance and governance decision published by the Titan Engine. This schema represents the stable public response contract consumed by APIs, SDKs, dashboards, response cards and future integration channels.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "identity",
+    "intelligence",
+    "recovery",
+    "governance",
+    "telemetry"
+  ],
+  "properties": {
+    "identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "intelligence": {
+      "$ref": "#/$defs/intelligence"
+    },
+    "recovery": {
+      "$ref": "#/$defs/recovery"
+    },
+    "governance": {
+      "$ref": "#/$defs/governance"
+    },
+    "telemetry": {
+      "$ref": "#/$defs/telemetry"
+    },
+    "extensions": {
+      "description": "Namespaced integration-specific values that extend the response contract without modifying Titan's deterministic operational semantics.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/extensionValue"
+      },
+      "maxProperties": 50
+    }
+  },
+  "$defs": {
+    "identity": {
+      "title": "Response Identity",
+      "description": "Metadata identifying the canonical response, its originating request and the Titan Engine and schema versions that produced it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "response_id",
+        "request_id",
+        "generated_at",
+        "engine_version",
+        "schema_version"
+      ],
+      "properties": {
+        "response_id": {
+          "description": "Titan-generated identifier uniquely identifying this canonical response.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "request_id": {
+          "description": "Identifier of the analysis request from which this canonical response was produced.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "generated_at": {
+          "description": "Time at which Titan generated the canonical response.",
+          "type": "string",
+          "format": "date-time"
+        },
+        "engine_version": {
+          "description": "Version of the Titan Engine that produced the canonical response.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "schema_version": {
+          "description": "Version of the Titan Canonical Response Schema against which the response was produced.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
+      }
+    },
+    "determination": {
+      "title": "Determination",
+      "description": "States whether Titan could assign a governed operational classification from the available evidence. Determination communicates classification completeness and must not be inferred solely from confidence.",
+      "type": "string",
+      "enum": [
+        "classified",
+        "partially_classified",
+        "unclassified"
+      ]
+    },
+    "classification": {
+      "title": "Operational Classification",
+      "description": "The governed operational category assigned by Titan and, when deterministically supported, a more specific subtype. Classification expresses what the incident is; it does not prescribe recovery action.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "category"
+      ],
+      "properties": {
+        "category": {
+          "description": "Canonical governed category assigned to the incident. When determination is unclassified, this value must use Titan's governed unknown category rather than an invented diagnosis.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        },
+        "subtype": {
+          "description": "Optional governed refinement of the canonical category when the available evidence deterministically supports a more specific classification.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        }
+      }
+    },
+    "confidence": {
+      "title": "Classification Confidence",
+      "description": "Communicates the strength and provenance basis of Titan's governed determination. Confidence does not replace evidence sufficiency and must not independently create classification truth.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "basis"
+      ],
+      "properties": {
+        "level": {
+          "description": "Qualitative confidence level assigned to the governed determination. Indeterminate is used when Titan cannot establish a meaningful confidence level from the available evidence.",
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "indeterminate"
+          ]
+        },
+        "basis": {
+          "description": "Governed machine-readable reason explaining the principal evidence basis for the confidence level.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        }
+      }
+    },
+    "factValue": {
+      "title": "Fact Value",
+      "description": "A bounded JSON primitive or flat primitive array representing a deterministically extracted operational fact. Nested objects are not permitted.",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 4000
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "canonicalFacts": {
+      "title": "Canonical Facts",
+      "description": "Deterministically extracted operational facts whose meaning is stable across platforms and providers. A canonical fact must have durable cross-platform semantics, be directly extracted or deterministically parsed, remain schema-stable and support downstream operational decisions.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+        "maxLength": 128
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/factValue"
+      },
+      "maxProperties": 100
+    },
+    "platformFacts": {
+      "title": "Platform Facts",
+      "description": "Deterministically extracted facts whose meaning or vocabulary is specific to a provider, platform, product, runtime, framework or integration. Platform facts remain observations and must not override canonical classification truth.",
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$",
+        "maxLength": 128
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/factValue"
+      },
+      "maxProperties": 100
+    },
+    "facts": {
+      "title": "Operational Facts",
+      "description": "Deterministically extracted facts separated into stable cross-platform canonical facts and platform-specific facts. Empty fact objects are valid when the submitted evidence does not support deterministic extraction.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical",
+        "platform"
+      ],
+      "properties": {
+        "canonical": {
+          "$ref": "#/$defs/canonicalFacts"
+        },
+        "platform": {
+          "$ref": "#/$defs/platformFacts"
+        }
+      }
+    },
+    "evidenceValue": {
+      "title": "Evidence Value",
+      "description": "A bounded atomic value or flat primitive array containing the specific observable material used to support or challenge Titan's determination. Nested objects are prohibited so evidence remains inspectable and portable.",
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "evidenceItem": {
+      "title": "Evidence Item",
+      "description": "A discrete machine-readable observation used by Titan to support or challenge an operational determination. Evidence items describe observable material and provenance; they must not contain recovery instructions or invented conclusions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "value",
+        "source"
+      ],
+      "properties": {
+        "type": {
+          "description": "Governed machine-readable evidence kind describing what was observed, such as explicit_http_status, required_field_message or conflicting_infrastructure_signal.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        },
+        "value": {
+          "$ref": "#/$defs/evidenceValue"
+        },
+        "source": {
+          "description": "Governed provenance token identifying where the evidence originated, such as submitted_evidence, structured_payload, registry_match or deterministic_extraction.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        }
+      }
+    },
+    "evidenceList": {
+      "title": "Evidence List",
+      "description": "A bounded collection of discrete evidence items. An empty collection is valid when no evidence of that relationship was deterministically established.",
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/evidenceItem"
+      }
+    },
+    "missingEvidence": {
+      "title": "Missing Evidence",
+      "description": "A bounded collection of governed machine-readable evidence requirements or context elements that were unavailable. Missing evidence records absence explicitly and must not imply that the absent condition is false.",
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+      }
+    },
+    "evidenceSufficiency": {
+      "title": "Evidence Sufficiency",
+      "description": "States whether the available evidence is adequate for Titan's published determination. Sufficiency evaluates the evidence set and remains distinct from qualitative confidence.",
+      "type": "string",
+      "enum": [
+        "sufficient",
+        "partially_sufficient",
+        "insufficient"
+      ]
+    },
+    "evidence": {
+      "title": "Determination Evidence",
+      "description": "The structured evidence account supporting Titan's determination. Supporting evidence confirms the published classification, conflicting evidence records material signals that challenge or constrain it, missing evidence identifies information unavailable to Titan, and sufficiency states whether the total evidence set was adequate.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supporting",
+        "conflicting",
+        "missing",
+        "sufficiency"
+      ],
+      "properties": {
+        "supporting": {
+          "description": "Observable evidence that positively supports the published operational classification.",
+          "$ref": "#/$defs/evidenceList"
+        },
+        "conflicting": {
+          "description": "Observable evidence that materially challenges, competes with or constrains the published operational classification. Conflicting evidence must be preserved rather than silently discarded.",
+          "$ref": "#/$defs/evidenceList"
+        },
+        "missing": {
+          "$ref": "#/$defs/missingEvidence"
+        },
+        "sufficiency": {
+          "$ref": "#/$defs/evidenceSufficiency"
+        }
+      }
+    },
+    "operationalSignal": {
+      "title": "Operational Signal",
+      "description": "A compact deterministic assessment of the incident's present operational seriousness and time sensitivity. Operational Signal communicates priority-relevant intelligence only; it does not prescribe remediation, routing or approval.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "severity",
+        "urgency"
+      ],
+      "properties": {
+        "severity": {
+          "description": "Governed qualitative assessment of the seriousness of the observed operational condition. Indeterminate is used when Titan cannot establish severity from the available evidence.",
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "none",
+            "indeterminate"
+          ]
+        },
+        "urgency": {
+          "description": "Governed qualitative assessment of how quickly the observed condition requires operational attention. This is an assessment of time sensitivity, not a recovery instruction or workflow deadline.",
+          "type": "string",
+          "enum": [
+            "immediate",
+            "high",
+            "normal",
+            "low",
+            "none",
+            "indeterminate"
+          ]
+        }
+      }
+    },
+    "impactScope": {
+      "title": "Impact Scope",
+      "description": "Governed breadth of the observed or deterministically inferred operational impact.",
+      "type": "string",
+      "enum": [
+        "none",
+        "single_operation",
+        "component",
+        "service",
+        "multi_service",
+        "organization",
+        "indeterminate"
+      ]
+    },
+    "affectedTargetList": {
+      "title": "Affected Target List",
+      "description": "A bounded list of unique machine-readable identifiers for systems, services, components, workflows or operational domains known to be affected. An empty list is valid when no affected target can be deterministically identified.",
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    },
+    "impact": {
+      "title": "Operational Impact",
+      "description": "The deterministically established scope and affected targets of the incident. Impact states where the condition is known to matter; it does not estimate unobserved business loss, assign ownership or prescribe escalation.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "affected_targets"
+      ],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/impactScope"
+        },
+        "affected_targets": {
+          "$ref": "#/$defs/affectedTargetList"
+        }
+      }
+    },
+    "explanation": {
+      "title": "Deterministic Explanation",
+      "description": "Human-readable synthesis of Titan's published intelligence, grounded in the structured facts and evidence. Explanation supports consistent presentation across channels and must not introduce claims, actions or policy decisions absent from the canonical response.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "summary",
+        "justification"
+      ],
+      "properties": {
+        "summary": {
+          "description": "Concise human-readable statement of what Titan determined or could not determine.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "justification": {
+          "description": "Human-readable explanation of the principal facts, supporting evidence, conflicts or missing evidence that led to the published determination. It must remain diagnostic and non-prescriptive.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8000
+        }
+      }
+    },
+    "intelligence": {
+      "title": "Operational Intelligence",
+      "description": "Titan's complete deterministic account of what was observed, what could be concluded, how strongly that conclusion is supported, and where the condition is known to matter. This domain contains diagnostic truth only and excludes recovery actions, governance decisions and execution telemetry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "determination",
+        "classification",
+        "confidence",
+        "facts",
+        "evidence",
+        "operational_signal",
+        "impact",
+        "explanation"
+      ],
+      "properties": {
+        "determination": {
+          "$ref": "#/$defs/determination"
+        },
+        "classification": {
+          "$ref": "#/$defs/classification"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "facts": {
+          "$ref": "#/$defs/facts"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "operational_signal": {
+          "$ref": "#/$defs/operationalSignal"
+        },
+        "impact": {
+          "$ref": "#/$defs/impact"
+        },
+        "explanation": {
+          "$ref": "#/$defs/explanation"
+        }
+      }
+    },
+    "recoveryRecommendation": {
+      "title": "Recovery Recommendation",
+      "description": "Governed machine-readable token identifying Titan's safest deterministic next action based on the published Intelligence domain. The recommendation communicates what should happen next without embedding execution mechanics, ownership, routing or approval workflow details.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+    },
+    "recoveryRationale": {
+      "title": "Recovery Rationale",
+      "description": "Human-readable explanation of why Titan selected the published recovery recommendation. The rationale must be derived from the canonical Intelligence domain, remain non-speculative and must not introduce new facts, evidence or classifications.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "automationDisposition": {
+      "title": "Automation Disposition",
+      "description": "States whether the published recovery recommendation is suitable for automated execution. This field communicates deterministic automation applicability only; it does not execute the action, identify an approver or define an approval workflow.",
+      "type": "string",
+      "enum": [
+        "supported",
+        "requires_approval",
+        "not_supported"
+      ]
+    },
+    "recoveryLimitations": {
+      "title": "Recovery Limitations",
+      "description": "A bounded collection of governed machine-readable constraints, prerequisites or external dependencies that limit the applicability or successful completion of the recovery recommendation. An empty array indicates that Titan identified no material limitation from the available intelligence.",
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+      }
+    },
+    "recovery": {
+      "title": "Deterministic Recovery Guidance",
+      "description": "Titan's bounded recovery guidance derived from the canonical Intelligence domain. Recovery identifies the safest governed next action, explains why it applies, communicates whether automated execution is appropriate and records material limitations. It must not redefine diagnostic truth, perform execution, assign ownership or make publication decisions.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recommendation",
+        "rationale",
+        "automation",
+        "limitations"
+      ],
+      "properties": {
+        "recommendation": {
+          "$ref": "#/$defs/recoveryRecommendation"
+        },
+        "rationale": {
+          "$ref": "#/$defs/recoveryRationale"
+        },
+        "automation": {
+          "$ref": "#/$defs/automationDisposition"
+        },
+        "limitations": {
+          "$ref": "#/$defs/recoveryLimitations"
+        }
+      }
+    },
+    "governanceDisposition": {
+      "title": "Governance Disposition",
+      "description": "The final governed usability state of the canonical response. Disposition determines whether and under what general condition the response may be exposed or used; it does not alter the underlying Intelligence or execute the Recovery recommendation.",
+      "type": "string",
+      "enum": [
+        "approved",
+        "approved_with_constraints",
+        "manual_review_required",
+        "blocked",
+        "indeterminate"
+      ]
+    },
+    "governanceConstraints": {
+      "title": "Governance Constraints",
+      "description": "A bounded collection of governed machine-readable restrictions applying to publication, consumption or consequential use of the canonical response. An empty array indicates that Titan identified no material governance restriction under the applied policy.",
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+      }
+    },
+    "policyIntervention": {
+      "title": "Policy Intervention",
+      "description": "Governed machine-readable token identifying the material intervention applied by the governing policy or Titan Stability Kernel. The value none explicitly states that no material policy intervention altered or restricted the canonical response.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+    },
+    "governancePolicy": {
+      "title": "Governance Policy Basis",
+      "description": "Compact policy provenance identifying the governed policy identity, policy version and material intervention underlying the Governance disposition. This object must not contain rule-evaluation traces, timings, worker details, call stacks or other execution telemetry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "policy_id",
+        "policy_version",
+        "intervention"
+      ],
+      "properties": {
+        "policy_id": {
+          "description": "Stable governed identifier of the policy family or policy set used to determine the response's Governance disposition.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+        },
+        "policy_version": {
+          "description": "Version identifier of the applied governance policy. The value is intentionally format-neutral so Titan may use semantic, date-based or internally governed versioning without changing the public schema.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "intervention": {
+          "$ref": "#/$defs/policyIntervention"
+        }
+      }
+    },
+    "governance": {
+      "title": "Response Governance",
+      "description": "Titan's governed decision describing how the canonical response may safely be exposed, consumed or used. Governance communicates the final usability disposition, applicable restrictions and compact policy provenance. It must not redefine Intelligence, prescribe Recovery, perform execution, assign workflow ownership or expose policy-engine telemetry.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "disposition",
+        "constraints",
+        "policy"
+      ],
+      "properties": {
+        "disposition": {
+          "$ref": "#/$defs/governanceDisposition"
+        },
+        "constraints": {
+          "$ref": "#/$defs/governanceConstraints"
+        },
+        "policy": {
+          "$ref": "#/$defs/governancePolicy"
+        }
+      }
+    },
+    "telemetryExecutionStatus": {
+      "title": "Telemetry Execution Status",
+      "description": "The bounded public outcome of Titan's processing of the canonical response. This status describes whether Titan completed processing normally, completed through a controlled degraded path or returned a deterministically safe response after an internal failure or safety constraint. It does not describe the operational incident itself.",
+      "type": "string",
+      "enum": [
+        "completed",
+        "completed_with_degradation",
+        "failed_safe"
+      ]
+    },
+    "telemetryExecution": {
+      "title": "Telemetry Execution Summary",
+      "description": "A compact summary of Titan's end-to-end processing outcome and elapsed processing duration. Execution telemetry describes how Titan produced the canonical response and must not contain internal pipeline stages, worker details, rule traces, provider internals or downstream workflow execution data.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "duration_ms"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/telemetryExecutionStatus"
+        },
+        "duration_ms": {
+          "description": "Total end-to-end Titan processing duration in whole milliseconds for production of the canonical response. The value excludes downstream client rendering and subsequent execution of any Recovery recommendation.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600000
+        }
+      }
+    },
+    "telemetryIndicators": {
+      "title": "Telemetry Processing Indicators",
+      "description": "A bounded collection of governed machine-readable flags describing material processing conditions that affected production of the canonical response. Indicators communicate processing facts only and must not duplicate diagnostic evidence, recovery limitations, governance constraints or policy interventions. An empty array indicates that Titan identified no material non-standard processing condition.",
+      "type": "array",
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128,
+        "pattern": "^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$"
+      }
+    },
+    "telemetry": {
+      "title": "Response Telemetry",
+      "description": "Titan's compact public account of how the canonical response was produced. Telemetry communicates the bounded execution outcome, material processing indicators and an optional reference to richer private audit material. It must not expose internal pipeline topology, raw logs, stack traces, provider payloads, policy-engine traces or infrastructure details.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution",
+        "indicators",
+        "audit_reference"
+      ],
+      "properties": {
+        "execution": {
+          "$ref": "#/$defs/telemetryExecution"
+        },
+        "indicators": {
+          "$ref": "#/$defs/telemetryIndicators"
+        },
+        "audit_reference": {
+          "description": "Immutable reference to a richer private Titan operational-event or governance audit record when one was retained. The value is null when no separate deep audit record exists. This reference is distinct from identity.response_id, which identifies the canonical response itself.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256
+        }
+      }
+    },
+    "extensionValue": {
+      "description": "A JSON-compatible extension value with intentionally limited nesting.",
+      "oneOf": [
+        {
+          "type": "string",
+          "maxLength": 2000
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "oneOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
