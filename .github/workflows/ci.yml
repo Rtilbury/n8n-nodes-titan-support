@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   pull_request:
@@ -37,7 +37,7 @@ jobs:
 
       - name: Probe bundled standalone validator
         run: |
-          npx --yes esbuild@0.25.12 dist/canonical-standalone-probe.cjs --bundle --platform=node --format=cjs --outfile=dist/canonical-standalone-bundled-probe.cjs
+          npx --yes esbuild@0.25.12 dist/canonical-standalone-probe.cjs --bundle --platform=node --format=cjs --outfile=dist/canonical-standalone-bundled-probe.cjs --metafile=dist/canonical-bundle-meta.json
           node scripts/verify-bundled-standalone.cjs
 
       - name: Remove experimental build artifacts

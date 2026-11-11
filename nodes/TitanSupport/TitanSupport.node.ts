@@ -8,6 +8,8 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 
+import { isCanonicalResponse } from './CanonicalValidator';
+
 const TITAN_ANALYZE_URL =
 	'https://b2hmcbgju7.eu-west-1.awsapprunner.com/v1/analyze';
 
@@ -193,21 +195,15 @@ export class TitanSupport implements INodeType {
 				);
 			}
 
-			const canonical = response as IDataObject;
-			const identity = canonical.identity;
-
-			if (
-				typeof identity !== 'object' ||
-				identity === null ||
-				Array.isArray(identity) ||
-				(identity as IDataObject).schema_version !== '1.0.0'
-			) {
+			if (!isCanonicalResponse(response)) {
 				throw new NodeOperationError(
 					this.getNode(),
-					'Titan returned a response without the required Canonical v1.0.0 identity.',
+					'Titan returned a response that failed Canonical v1.0.0 schema validation.',
 					{ itemIndex: i },
-				);
+					);
 			}
+
+			const canonical = response as IDataObject;
 
 			returnData.push({
 				json: canonical,
